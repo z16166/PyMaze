@@ -351,12 +351,38 @@ class MainWindow(QMainWindow):
         # 迷宫显示区域
         self.maze = None
         self.maze_view = MazeWidget(None)
-        main_layout.addWidget(self.maze_view)
+        main_layout.addWidget(self.maze_view, 1) # 设置 stretch 为 1，使其占据剩余空间
         
-        # 底部控制
+        # 底部控制区 (按钮 + 颜色图例)
+        bottom_layout = QHBoxLayout()
+        
         self.solve_btn = QPushButton("显示/隐藏 路径")
+        self.solve_btn.setMinimumWidth(120) # 防止按钮过窄
         self.solve_btn.clicked.connect(self.toggle_solution)
-        main_layout.addWidget(self.solve_btn)
+        bottom_layout.addWidget(self.solve_btn)
+        
+        bottom_layout.addStretch()
+        
+        def add_legend_item(color, text, is_path=False):
+            item_layout = QHBoxLayout()
+            item_layout.setSpacing(5)
+            color_label = QLabel()
+            color_label.setFixedSize(12, 12)
+            if is_path:
+                color_label.setStyleSheet(f"background-color: {color}; margin: 2px; border-radius: 2px;")
+            else:
+                color_label.setStyleSheet(f"background-color: {color}; border-radius: 2px;")
+            item_layout.addWidget(color_label)
+            item_layout.addWidget(QLabel(text))
+            bottom_layout.addLayout(item_layout)
+            bottom_layout.addSpacing(15)
+
+        add_legend_item("blue", "起点")
+        add_legend_item("red", "终点")
+        add_legend_item("#00BFFF", "尝试", is_path=True)
+        add_legend_item("#FF6400", "路径", is_path=True)
+        
+        main_layout.addLayout(bottom_layout)
         
         container = QWidget()
         container.setLayout(main_layout)
