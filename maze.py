@@ -318,6 +318,7 @@ class MainWindow(QMainWindow):
         self.width_spin.setRange(5, 99)
         self.width_spin.setSingleStep(2)
         self.width_spin.setValue(51)
+        self.width_spin.valueChanged.connect(self.generate_new_maze)
         control_layout.addWidget(self.width_spin)
         
         control_layout.addWidget(QLabel("高度 (奇数):"))
@@ -325,11 +326,13 @@ class MainWindow(QMainWindow):
         self.height_spin.setRange(5, 99)
         self.height_spin.setSingleStep(2)
         self.height_spin.setValue(51)
+        self.height_spin.valueChanged.connect(self.generate_new_maze)
         control_layout.addWidget(self.height_spin)
         
         control_layout.addWidget(QLabel("生成算法:"))
         self.algo_combo = QComboBox()
         self.algo_combo.addItems(["DFS", "Prim", "Kruskal", "Wilson"])
+        self.algo_combo.currentTextChanged.connect(self.generate_new_maze)
         control_layout.addWidget(self.algo_combo)
         
         control_layout.addWidget(QLabel("寻路算法:"))
