@@ -15,6 +15,7 @@ class MazeSolver:
         self.height = height if height % 2 != 0 else height + 1
         self.grid = [[1] * self.width for _ in range(self.height)]
         self.path = [] # 存储最终路径坐标
+        self.explored_nodes = [] # 存储尝试过的位置
         self.generate(algorithm)
 
     def generate(self, algorithm="DFS"):
@@ -172,6 +173,7 @@ class MazeSolver:
 
     def solve(self, start, end, algorithm="DFS"):
         """寻路算法入口"""
+        self.explored_nodes = [] # 清空尝试记录
         if algorithm == "DFS":
             return self._solve_dfs(start, end)
         else:
@@ -188,6 +190,7 @@ class MazeSolver:
                 return True
             
             visited.add((curr_x, curr_y))
+            self.explored_nodes.append((curr_x, curr_y))
             for dx, dy in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
                 nx, ny = curr_x + dx, curr_y + dy
                 if 0 <= nx < self.width and 0 <= ny < self.height:
@@ -205,17 +208,21 @@ class MazeSolver:
         def heuristic(a, b):
             return abs(a[0] - b[0]) + abs(a[1] - b[1])
 
+        start_h = heuristic(start, end)
         open_set = []
-        heapq.heappush(open_set, (0, start))
+        # 使用 (f_score, h_score, node) 作为优先级，h_score 用于在 f_score 相等时进行启发式打破平局
+        heapq.heappush(open_set, (start_h, start_h, start))
         came_from = {}
         g_score = {start: 0}
-        f_score = {start: heuristic(start, end)}
         
         visited_nodes = set()
 
         while open_set:
-            current = heapq.heappop(open_set)[1]
+            f, h, current = heapq.heappop(open_set)
             
+            if current in visited_nodes:
+                continue
+                
             if current == end:
                 self.path = []
                 while current in came_from:
@@ -225,12 +232,13 @@ class MazeSolver:
                 return self.path
 
             visited_nodes.add(current)
+            self.explored_nodes.append(current)
             
             for dx, dy in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
                 neighbor = (current[0] + dx, current[1] + dy)
                 
                 if 0 <= neighbor[0] < self.width and 0 <= neighbor[1] < self.height:
-                    if self.grid[neighbor[1]][neighbor[0]] == 1:
+                    if self.grid[neighbor[1]][neighbor[0]] == 1 or neighbor in visited_nodes:
                         continue
                     
                     tentative_g_score = g_score[current] + 1
@@ -238,9 +246,9 @@ class MazeSolver:
                     if neighbor not in g_score or tentative_g_score < g_score[neighbor]:
                         came_from[neighbor] = current
                         g_score[neighbor] = tentative_g_score
-                        f_score[neighbor] = g_score[neighbor] + heuristic(neighbor, end)
-                        if neighbor not in [i[1] for i in open_set]:
-                            heapq.heappush(open_set, (f_score[neighbor], neighbor))
+                        h_score = heuristic(neighbor, end)
+                        f_score = tentative_g_score + h_score
+                        heapq.heappush(open_set, (f_score, h_score, neighbor))
         
         self.path = []
         return self.path
@@ -277,6 +285,14 @@ class MazeWidget(QWidget):
         # 绘制起点和终点
         painter.fillRect(offset_x + 1 * cell_size, offset_y + 1 * cell_size, cell_size, cell_size, Qt.blue) # 起点
         painter.fillRect(offset_x + (self.maze.width-2) * cell_size, offset_y + (self.maze.height-2) * cell_size, cell_size, cell_size, Qt.red) # 终点
+
+        # 绘制寻路过程（尝试过的位置）
+        if self.show_solution and self.maze.explored_nodes:
+            painter.setBrush(QColor(0, 191, 255)) # 亮蓝色 (DeepSkyBlue)，更加鲜艳
+            painter.setPen(Qt.NoPen)
+            for ex, ey in self.maze.explored_nodes:
+                # 绘制稍微小一点的方块以区分路径
+                painter.drawRect(offset_x + ex * cell_size + cell_size/4, offset_y + ey * cell_size + cell_size/4, cell_size/2, cell_size/2)
 
         # 绘制寻路路径
         if self.show_solution and self.maze.path:
